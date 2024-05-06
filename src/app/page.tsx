@@ -1,113 +1,337 @@
-import Image from "next/image";
+"use client";
+import {
+  addUser,
+  deleteUser,
+  editUser,
+  getAllUsers,
+  getSpesisficUser,
+} from "@/services/users.services";
+import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 export default function Home() {
+  const [isOpenAddUser, setisOpenAddUser] = useState(false);
+  const [isOpenPopUpEdit, setisOpenPopUpEdit] = useState(false);
+  const [selectedEditData, setselectedEditData] = useState<any>([]);
+  const [allDataUser, setallDataUser] = useState([]);
+
+  const handleAddUser = async (e: any) => {
+    e.preventDefault();
+    if (e.target[0].value !== "" && e.target[1].value !== "") {
+      try {
+        const newData = {
+          name: e.target[0].value,
+          gender: e.target[1].value,
+        };
+
+        await addUser(newData);
+
+        Swal.fire({
+          icon: "success",
+          title: "Your data have been saved!",
+          showConfirmButton: false,
+          timer: 1500,
+        }).then(async () => {
+          setisOpenAddUser(false);
+          const response = await getAllUsers();
+          setallDataUser(response.data);
+        });
+      } catch (error: any) {
+        Swal.fire({
+          icon: "error",
+          title: error.message,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      }
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Something when wrong!",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deleteUser(id);
+
+          Swal.fire({
+            icon: "success",
+            title: "Your data have been saved!",
+            showConfirmButton: false,
+            timer: 1500,
+          }).then(async () => {
+            setisOpenAddUser(false);
+            const response = await getAllUsers();
+            setallDataUser(response.data);
+          });
+        } catch (error: any) {
+          Swal.fire({
+            icon: "error",
+            title: error.message,
+            showConfirmButton: false,
+            timer: 1500,
+          });
+        }
+      }
+    });
+  };
+
+  const handleOpenEditData = async (id: string) => {
+    try {
+      const response = await getSpesisficUser(id);
+      setselectedEditData(response.data);
+      setisOpenPopUpEdit(true);
+    } catch (error: any) {
+      Swal.fire({
+        icon: "error",
+        title: error.message,
+        showConfirmButton: false,
+        timer: 1500,
+      });
+    }
+  };
+
+  const handleEditData = async (e: any) => {
+    e.preventDefault();
+    if (e.target[0].value !== "" && e.target[1].value !== "") {
+      try {
+        const newData = {
+          name: e.target[0].value,
+          gender: e.target[1].value,
+        };
+
+        await editUser(selectedEditData[0].id, newData);
+
+        Swal.fire({
+          icon: "success",
+          title: "Your data have been saved!",
+          showConfirmButton: false,
+          timer: 1500,
+        }).then(async () => {
+          setisOpenPopUpEdit(false);
+          const response = await getAllUsers();
+          setallDataUser(response.data);
+        });
+      } catch (error: any) {
+        Swal.fire({
+          icon: "error",
+          title: error.message,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      }
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Something when wrong!",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const getAllDataUserFromApi = async () => {
+      const response = await getAllUsers();
+      setallDataUser(response.data);
+    };
+
+    getAllDataUserFromApi();
+  }, []);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="h-screen w-full flex justify-center items-start relative">
+      <div className="w-full mx-10 mt-10">
+        {/* button add users */}
+        <div className="w-full mb-3 flex justify-end">
+          <button
+            className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-300 ease-in-out duration-300"
+            onClick={() => setisOpenAddUser(!isOpenAddUser)}
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            Add User
+          </button>
+        </div>
+
+        {/* table of users */}
+        <div className="w-full">
+          <table className="w-full">
+            <thead className="bg-green-950 text-white">
+              <tr>
+              <td className="p-2 border border-green-950">No.</td>
+                <td className="p-2 border border-green-950">ID</td>
+                <td className="p-2 border border-green-950">Name</td>
+                <td className="p-2 border border-green-950">Gender</td>
+                <td className="p-2 border border-green-950">Action</td>
+              </tr>
+            </thead>
+            <tbody>
+              {allDataUser.map((res: any, index: number) => (
+                <tr key={"user" + index + 1}>
+                  <td className="p-2 border border-green-950">{index+1}.</td>
+                  <td className="p-2 border border-green-950">{res.id}</td>
+                  <td className="p-2 border border-green-950">{res.name}</td>
+                  <td className="p-2 border border-green-950">{res.gender}</td>
+                  <td className="p-2 border border-green-950">
+                    {/* edit button */}
+                    <button
+                      className="bg-yellow-400 p-1 rounded-lg"
+                      onClick={() => handleOpenEditData(res.id)}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                        />
+                      </svg>
+                    </button>
+
+                    {/* remove button */}
+                    <button
+                      className="bg-red-400 p-1 rounded-lg ml-2"
+                      onClick={() => handleDeleteUser(res.id)}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                        />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      {/* pop up add user */}
+      {isOpenAddUser && (
+        <div className="absolute top-0 left-0 w-full h-screen flex justify-center items-center bg-[#9292927a]">
+          <div className="bg-white max-w-[300px] w-full p-2 ">
+            {/* button exit */}
+            <div className="w-full flex justify-end">
+              <button
+                className="w-4 h-4 text-green-950 hover:text-red-500 ease-in-out duration-300"
+                onClick={() => setisOpenAddUser(!isOpenAddUser)}
+              >
+                X
+              </button>
+            </div>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+            {/* title */}
+            <div className="text-center font-semibold my-3">ADD USER</div>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+            {/* body */}
+            <form onSubmit={(e: any) => handleAddUser(e)}>
+              <input
+                type="text"
+                placeholder="Name"
+                className="w-full border  border-green-950 p-2 mb-2"
+              />
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+              <select className="w-full border  border-green-950 p-2">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+              {/* button */}
+              <div className="w-full mt-3 flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-300 ease-in-out duration-300"
+                  // onClick={() => setisOpenAddUser(!isOpenAddUser)}
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* pop up edit user */}
+      {isOpenPopUpEdit && (
+        <div className="absolute top-0 left-0 w-full h-screen flex justify-center items-center bg-[#9292927a]">
+          <div className="bg-white max-w-[300px] w-full p-2 ">
+            {/* button exit */}
+            <div className="w-full flex justify-end">
+              <button
+                className="w-4 h-4 text-green-950 hover:text-red-500 ease-in-out duration-300"
+                onClick={() => {
+                  setisOpenPopUpEdit(!isOpenPopUpEdit);
+                  setselectedEditData([]);
+                }}
+              >
+                X
+              </button>
+            </div>
+
+            {/* title */}
+            <div className="text-center font-semibold my-3">EDIT USER</div>
+
+            {/* body */}
+            <form onSubmit={(e: any) => handleEditData(e)}>
+              <input
+                type="text"
+                placeholder="Name"
+                className="w-full border  border-green-950 p-2 mb-2"
+                defaultValue={selectedEditData[0]?.name}
+              />
+
+              <select
+                className="w-full border  border-green-950 p-2"
+                defaultValue={selectedEditData[0]?.gender}
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+
+              {/* button */}
+              <div className="w-full mt-3 flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-300 ease-in-out duration-300"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
